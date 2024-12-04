@@ -83,6 +83,10 @@ def format_offers(offers):
     offer_summary = "\n".join(offers)
     return offer_summary
 
+@app.route('/')
+def hello():
+    return jsonify({"message": "Welcome to EV Charging"})
+
 @app.route('/start_charging', methods=['POST'])
 def start_charging():
     """
