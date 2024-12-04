@@ -24,23 +24,12 @@ CORS(app)  # Enable CORS for all routes or configure as needed
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-#def access_secret_version(secret_id, project_id, version="latest"):
-    """
-    Accesses the payload for the given secret version if one exists.
-    """
-    #client = secretmanager.SecretManagerServiceClient()
-    #name = f"projects/{project_id}/secrets/{secret_id}/versions/{version}"
-    #response = client.access_secret_version(request={"name": name})
-    #return response.payload.data.decode('UTF-8')
 
 # Retrieve project ID from environment variable
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
 FIREBASE_CREDENTIALS_JSON= os.environ.get(FIREBASE_CREDENTIALS_JSON)
 GOOGLE_PLACES_API_KEY=os.environ.get(GOOGLE_PLACES_API_KEY)
 
-# Retrieve secrets from Secret Manager
-#FIREBASE_CREDENTIALS_JSON = access_secret_version("firebase_credentials", PROJECT_ID)
-#GOOGLE_PLACES_API_KEY = access_secret_version("google_places_api_key", PROJECT_ID)
 
 print(PROJECT_ID)
 print(FIREBASE_CREDENTIALS_JSON)
