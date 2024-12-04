@@ -138,7 +138,9 @@ def start_charging():
 
 if __name__ == '__main__':
     # Run the Flask app
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)), debug=True)
+    #app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
+
 
 
 
