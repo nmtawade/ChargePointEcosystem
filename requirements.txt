@@ -4,3 +4,5 @@ requests==2.31.0
 gunicorn==20.1.0
 Flask-Cors==3.0.10
 google-cloud-secret-manager==2.16.0
+googlemaps==4.10.0
+python-dotenv==1.0.1
