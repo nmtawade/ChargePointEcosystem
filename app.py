@@ -27,8 +27,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Retrieve project ID from environment variable
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
-FIREBASE_CREDENTIALS_JSON= os.environ.get(FIREBASE_CREDENTIALS_JSON)
-GOOGLE_PLACES_API_KEY=os.environ.get(GOOGLE_PLACES_API_KEY)
+FIREBASE_CREDENTIALS_JSON= os.environ.get('FIREBASE_CREDENTIALS_JSON')
+GOOGLE_PLACES_API_KEY=os.environ.get('GOOGLE_PLACES_API_KEY')
 
 
 print(PROJECT_ID)
