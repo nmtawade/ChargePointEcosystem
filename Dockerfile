@@ -27,6 +27,6 @@ RUN pip install -r requirements.txt
 EXPOSE 8080
 
 # Command to run the app with gunicorn
-#CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
 
-CMD ["python", "app.py"]
+#CMD ["python", "app.py"]
