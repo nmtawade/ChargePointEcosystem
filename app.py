@@ -40,6 +40,11 @@ PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
 FIREBASE_CREDENTIALS_JSON = access_secret_version("firebase_credentials", PROJECT_ID)
 GOOGLE_PLACES_API_KEY = access_secret_version("google_places_api_key", PROJECT_ID)
 
+print(PROJECT_ID)
+print(FIREBASE_CREDENTIALS_JSON)
+print(GOOGLE_PLACES_API_KEY)
+
+
 # Initialize Firebase Admin SDK
 firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
 cred = credentials.Certificate(firebase_credentials)
