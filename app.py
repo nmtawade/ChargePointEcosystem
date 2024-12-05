@@ -1,3 +1,4 @@
+# app.py
 # -*- coding: utf-8 -*-
 """Driver saving Genie local offers.ipynb
 
@@ -39,7 +40,10 @@ print(GOOGLE_PLACES_API_KEY)
 # Initialize Firebase Admin SDK
 firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
 cred = credentials.Certificate(firebase_credentials)
-firebase_admin.initialize_app(cred)
+
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
 
 def get_nearby_offers(latitude, longitude, radius=1000):
     """
