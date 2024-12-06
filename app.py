@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
 FIREBASE_CREDENTIALS_JSON= os.environ.get('FIREBASE_CREDENTIALS_JSON')
 GOOGLE_PLACES_API_KEY=os.environ.get('GOOGLE_PLACES_API_KEY')
-
+YELP_API_KEY = 'vRtpcL5mv9chRIGSCVINtXdYTL_ZVg-n6uMi7_ir5nWDIdwqVN-Df2cHXccJrYX9oCmc5qP0sy3a1ZM7BKKfi8OY25xMGDfkI19DuypUR4GNGX1r2ChUSzT7wPxSZ3Yx'
 
 print(PROJECT_ID)
 print(FIREBASE_CREDENTIALS_JSON)
@@ -45,13 +45,13 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-def get_nearby_offers(latitude, longitude, radius=1000):
+def get_nearby_places(latitude, longitude, radius=1000):
     """
     Fetches nearby places using Google Places API.
     :param latitude: Latitude of the location
     :param longitude: Longitude of the location
     :param radius: Search radius in meters
-    :return: List of place names and their types
+    :return: List of place dictionaries
     """
     url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
     params = {
@@ -67,13 +67,49 @@ def get_nearby_offers(latitude, longitude, radius=1000):
         return []
 
     results = response.json().get('results', [])
-    offers = []
-    for place in results[:5]:  # Limit to top 5 offers
-        name = place.get('name')
-        types = place.get('types', [])
-        offers.append(f"{name} - {'/'.join(types)}")
+    return results
 
+def get_local_offers(place_id):
+    """
+    Fetches local offers for a given place using Yelp Fusion API.
+    :param place_id: ID of the place
+    :return: List of offers
+    """
+    url = 'https://api.yelp.com/v3/businesses/{}/reviews'.format(place_id)
+    headers = {
+        'Authorization': 'Bearer ' + YELP_API_KEY
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        logging.error(f"Yelp Fusion API error: {response.status_code}")
+        return []
+
+    reviews = response.json().get('reviews', [])
+    offers = [review['text'] for review in reviews if 'offer' in review['text']]
     return offers
+
+def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
+    """
+    Fetches nearby places and their offers/discounts.
+    :param latitude: Latitude of the location
+    :param longitude: Longitude of the location
+    :param radius: Search radius in meters
+    :return: List of place names and their offers
+    """
+    places = get_nearby_places(latitude, longitude, radius)
+    offers_with_discounts = []
+
+    for place in places[:5]:  # Limit to top 5 places
+        place_id = place.get('place_id')
+        place_name = place.get('name')
+        place_offers = get_local_offers(place_id)
+        if place_offers:
+            offers_with_discounts.append(f"{place_name} - Offers: {', '.join(place_offers)}")
+        else:
+            offers_with_discounts.append(f"{place_name} - No offers available")
+
+    return offers_with_discounts
 
 def format_offers(offers):
     """
@@ -115,12 +151,12 @@ def start_charging():
         return jsonify({'error': 'Missing required parameters.'}), 400
 
     # Fetch nearby offers
-    offers = get_nearby_offers(latitude, longitude)
-    offer_summary = format_offers(offers)
+    offers = get_nearby_offers_with_discounts(latitude, longitude)
+    formatted_offers = format_offers(offers)
 
     # Prepare notification content
     title = "Exclusive Local Offers Just for You!"
-    body = offer_summary
+    body = formatted_offers
 
     # Create the message
     message = messaging.Message(
