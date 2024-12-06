@@ -69,25 +69,39 @@ def get_nearby_places(latitude, longitude, radius=1000):
     results = response.json().get('results', [])
     return results
 
-def get_local_offers(place_id):
+def get_local_offers(latitude, longitude, place_name):
     """
     Fetches local offers for a given place using Yelp Fusion API.
     :param place_id: ID of the place
     :return: List of offers
     """
-    url = 'https://api.yelp.com/v3/businesses/{place_id}/service_offerings'
+    url = 'https://api.yelp.com/v3/businesses/search'
     headers = {
         'Authorization': 'Bearer ' + YELP_API_KEY
     }
-
-    response = requests.get(url, headers=headers)
+    params = { 
+		'latitude': latitude, 
+		'longitude': longitude, 
+		'term': place_name, 
+		'attributes': 'deals'
+    }
+    response = requests.get(url, headers=headers, params=params)
     if response.status_code != 200:
         logging.error(f"Yelp Fusion API error: {response.status_code}")
         return []
 
-    #reviews = response.json().get('reviews', [])
-    #offers = [review['text'] for review in reviews if 'offer' in review['text']]
-    offers = response.json().get('service_offerings', [])
+    businesses = response.json().get('businesses', [])
+    offers = []
+
+    for business in businesses:
+        name = business.get('name')
+        deal = business.get('deals', [])
+        if deal:
+            offer_details = [d['title'] for d in deal]  # Get the title of the deals
+            offers.append(f"{name} - Deals: {', '.join(offer_details)}")
+        else:
+            offers.append(f"{name} - No deals available")
+
     return offers
 
 def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
@@ -102,9 +116,9 @@ def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
     offers_with_discounts = []
 
     for place in places[:10]:  # Limit to top 10 places
-        place_id = place.get('place_id')
+       
         place_name = place.get('name')
-        place_offers = get_local_offers(place_id)
+        place_offers = get_local_offers(latitude, longitude, place_name)
         if place_offers:
             offers_with_discounts.append(f"{place_name} - Offers: {', '.join(place_offers)}")
         else:
