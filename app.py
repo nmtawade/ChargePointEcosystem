@@ -100,7 +100,7 @@ def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
     places = get_nearby_places(latitude, longitude, radius)
     offers_with_discounts = []
 
-    for place in places[:5]:  # Limit to top 5 places
+    for place in places[:10]:  # Limit to top 10 places
         place_id = place.get('place_id')
         place_name = place.get('name')
         place_offers = get_local_offers(place_id)
@@ -155,7 +155,7 @@ def start_charging():
     formatted_offers = format_offers(offers)
 
     # Prepare notification content
-    title = "Exclusive Local Offers Just for You!"
+    title = "Nearby attractions!"
     body = formatted_offers
 
     # Create the message
