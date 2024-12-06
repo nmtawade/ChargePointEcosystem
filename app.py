@@ -75,7 +75,7 @@ def get_local_offers(place_id):
     :param place_id: ID of the place
     :return: List of offers
     """
-    url = 'https://api.yelp.com/v3/businesses/{}/reviews'.format(place_id)
+    url = 'https://api.yelp.com/v3/businesses/{place_id}/service_offerings'
     headers = {
         'Authorization': 'Bearer ' + YELP_API_KEY
     }
@@ -85,8 +85,9 @@ def get_local_offers(place_id):
         logging.error(f"Yelp Fusion API error: {response.status_code}")
         return []
 
-    reviews = response.json().get('reviews', [])
-    offers = [review['text'] for review in reviews if 'offer' in review['text']]
+    #reviews = response.json().get('reviews', [])
+    #offers = [review['text'] for review in reviews if 'offer' in review['text']]
+    offers = response.json().get('service_offerings', [])
     return offers
 
 def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
