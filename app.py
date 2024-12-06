@@ -71,8 +71,7 @@ def get_nearby_places(latitude, longitude, radius=1000):
 
 def get_local_offers(latitude, longitude, place_name):
     """
-    Fetches local offers for a given place using Yelp Fusion API.
-    :param place_id: ID of the place
+    Fetches local offers for a given place using Yelp Fusion API
     :return: List of offers
     """
     url = 'https://api.yelp.com/v3/businesses/search'
