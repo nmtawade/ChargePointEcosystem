@@ -45,45 +45,30 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-def get_nearby_places(latitude, longitude, radius=1000):
+import requests
+import logging
+
+YELP_API_KEY = 'YOUR_YELP_API_KEY'
+
+def get_local_offers(latitude, longitude, radius=1000):
     """
-    Fetches nearby places using Google Places API.
+    Fetches local offers for nearby places using Yelp Fusion API.
     :param latitude: Latitude of the location
     :param longitude: Longitude of the location
     :param radius: Search radius in meters
-    :return: List of place dictionaries
-    """
-    url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-    params = {
-        'location': f'{latitude},{longitude}',
-        'radius': radius,
-        'type': 'cafe|restaurant|store',  # Adjust types as needed
-        'key': GOOGLE_PLACES_API_KEY
-    }
-
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        logging.error(f"Google Places API error: {response.status_code}")
-        return []
-
-    results = response.json().get('results', [])
-    return results
-
-def get_local_offers(latitude, longitude, place_name):
-    """
-    Fetches local offers for a given place using Yelp Fusion API
     :return: List of offers
     """
     url = 'https://api.yelp.com/v3/businesses/search'
     headers = {
         'Authorization': 'Bearer ' + YELP_API_KEY
     }
-    params = { 
-		'latitude': latitude, 
-		'longitude': longitude, 
-		'term': place_name, 
-		'attributes': 'deals'
+    params = {
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius': radius,
+        'attributes': 'deals'
     }
+
     response = requests.get(url, headers=headers, params=params)
     if response.status_code != 200:
         logging.error(f"Yelp Fusion API error: {response.status_code}")
@@ -103,28 +88,6 @@ def get_local_offers(latitude, longitude, place_name):
 
     return offers
 
-def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
-    """
-    Fetches nearby places and their offers/discounts.
-    :param latitude: Latitude of the location
-    :param longitude: Longitude of the location
-    :param radius: Search radius in meters
-    :return: List of place names and their offers
-    """
-    places = get_nearby_places(latitude, longitude, radius)
-    offers_with_discounts = []
-
-    for place in places[:10]:  # Limit to top 10 places
-       
-        place_name = place.get('name')
-        place_offers = get_local_offers(latitude, longitude, place_name)
-        if place_offers:
-            offers_with_discounts.append(f"{place_name} - Offers: {', '.join(place_offers)}")
-        else:
-            offers_with_discounts.append(f"{place_name} - No offers available")
-
-    return offers_with_discounts
-
 def format_offers(offers):
     """
     Formats the list of offers into a single string.
@@ -136,6 +99,7 @@ def format_offers(offers):
 
     offer_summary = "\n".join(offers)
     return offer_summary
+
 
 @app.route('/')
 def hello():
@@ -165,7 +129,7 @@ def start_charging():
         return jsonify({'error': 'Missing required parameters.'}), 400
 
     # Fetch nearby offers
-    offers = get_nearby_offers_with_discounts(latitude, longitude)
+    offers = get_local_offers(latitude, longitude)
     formatted_offers = format_offers(offers)
 
     # Prepare notification content
