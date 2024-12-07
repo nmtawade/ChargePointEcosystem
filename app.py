@@ -45,11 +45,6 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-import requests
-import logging
-
-YELP_API_KEY = 'YOUR_YELP_API_KEY'
-
 def get_local_offers(latitude, longitude, radius=1000):
     """
     Fetches local offers for nearby places using Yelp Fusion API.
@@ -63,9 +58,9 @@ def get_local_offers(latitude, longitude, radius=1000):
         'Authorization': 'Bearer ' + YELP_API_KEY
     }
     params = {
-        #'latitude': latitude,
-        #'longitude': longitude,
-        #'radius': radius,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius': radius,
         'attributes': 'deals'
     }
 
@@ -75,7 +70,7 @@ def get_local_offers(latitude, longitude, radius=1000):
         return []
 
     businesses = response.json().get('businesses', [])
-    Print(businesses)
+    print(businesses)
     offers = []
 
     for business in businesses:
