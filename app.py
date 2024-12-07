@@ -63,9 +63,9 @@ def get_local_offers(latitude, longitude, radius=1000):
         'Authorization': 'Bearer ' + YELP_API_KEY
     }
     params = {
-        'latitude': latitude,
-        'longitude': longitude,
-        'radius': radius,
+        #'latitude': latitude,
+        #'longitude': longitude,
+        #'radius': radius,
         'attributes': 'deals'
     }
 
