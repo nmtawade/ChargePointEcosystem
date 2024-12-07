@@ -75,6 +75,7 @@ def get_local_offers(latitude, longitude, radius=1000):
         return []
 
     businesses = response.json().get('businesses', [])
+    Print(businesses)
     offers = []
 
     for business in businesses:
