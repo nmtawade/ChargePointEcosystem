@@ -218,7 +218,7 @@ def get_cheaper_stations(station_id):
 	AND TOTAL_NUM_PORTS > 0
 	ORDER BY record_type DESC, distance ASC limit 21)
 	select 
-	DISTANCE
+	distance
 	, station_name 
 	, (select est_session_fee from test_pool where record_type = 'TARGET') - est_session_fee as est_savings
 	from test_pool 
