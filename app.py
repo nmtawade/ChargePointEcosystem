@@ -314,7 +314,7 @@ def cheaper_stations():
         # Fetch cheaper stations
         cheaper_stations_df = get_cheaper_stations(station_id)
         data = cheaper_stations_df.to_dict(orient='records')
-	   print (data)
+        print (data)
         return jsonify(data)
     except Exception as e:
         logging.error(f"Error fetching cheaper stations: {e}")
