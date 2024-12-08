@@ -220,7 +220,6 @@ def get_cheaper_stations(station_id):
 	select 
 	DISTANCE
 	, station_name 
-	, PRICE_PER_KWH
 	, (select est_session_fee from test_pool where record_type = 'TARGET') - est_session_fee as est_savings
 	from test_pool 
 	order by record_type desc, is_pricing_applied asc, est_savings desc, distance asc ;
