@@ -314,6 +314,7 @@ def cheaper_stations():
         # Fetch cheaper stations
         cheaper_stations_df = get_cheaper_stations(station_id)
         data = cheaper_stations_df.to_dict(orient='records')
+	   print (data)
         return jsonify(data)
     except Exception as e:
         logging.error(f"Error fetching cheaper stations: {e}")
@@ -323,23 +324,6 @@ def cheaper_stations():
     #title = "Nearby attractions!"
     #body = formatted_offers
 
-    # Create the message
-    #message = messaging.Message(
-    #   notification=messaging.Notification(
-    #      title=title,
-    #       body=body
-    #   ),
-    #   token=device_token,
-    #)
-
-    #try:
-    #    # Send the notification
-    #   response = messaging.send(message)
-    #    logging.info(f"Successfully sent message: {response}")
-    #    return jsonify({'message': 'Notification sent successfully.'}), 200
-    #except Exception as e:
-    #    logging.error(f"Error sending notification: {e}")
-    #    return jsonify({'error': 'Failed to send notification.'}), 500
 
 if __name__ == '__main__':
     # Run the Flask app
