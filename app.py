@@ -154,6 +154,8 @@ def get_data_from_snowflake(query):
     print (SNOWFLAKE_SCHEMA)
     print (SNOWFLAKE_ROLE)
 
+    logging.info(f"Connecting to Snowflake with user: {SNOWFLAKE_USER}, account: {SNOWFLAKE_ACCOUNT}")
+
     conn = snowflake.connector.connect(
     	  user=SNOWFLAKE_USER,
     	  password=SNOWFLAKE_PASSWORD,
@@ -163,7 +165,7 @@ def get_data_from_snowflake(query):
     	  schema=SNOWFLAKE_SCHEMA,
     	  role=SNOWFLAKE_ROLE
     )
-    print(SNOWFLAKE_USER)
+  
 	
     data = pd.read_sql_query(query, conn)
     print("INFO:- Done Fetching Data from Snowflake...")
