@@ -138,23 +138,33 @@ def format_offers(offers):
 
 def get_data_from_snowflake(query):
     # Get Snowflake connection parameters from environment variables
-    SNOWFLAKE_USER = os.getenv('SNOWFLAKE_USER')
-    SNOWFLAKE_PASSWORD = os.getenv('SNOWFLAKE_PASSWORD')
-    SNOWFLAKE_ACCOUNT = os.getenv('SNOWFLAKE_ACCOUNT')
-    SNOWFLAKE_WAREHOUSE = os.getenv('SNOWFLAKE_WAREHOUSE')
-    SNOWFLAKE_DATABASE = os.getenv('SNOWFLAKE_DATABASE')
-    SNOWFLAKE_SCHEMA = os.getenv('SNOWFLAKE_SCHEMA')
-    SNOWFLAKE_ROLE = os.getenv('SNOWFLAKE_ROLE')
+    SNOWFLAKE_USER = os.environ.get('SNOWFLAKE_USER')
+    SNOWFLAKE_PASSWORD = os.environ.get('SNOWFLAKE_PASSWORD')
+    SNOWFLAKE_ACCOUNT = os.environ.get('SNOWFLAKE_ACCOUNT')
+    SNOWFLAKE_WAREHOUSE = os.environ.get('SNOWFLAKE_WAREHOUSE')
+    SNOWFLAKE_DATABASE = os.environ.get('SNOWFLAKE_DATABASE')
+    SNOWFLAKE_SCHEMA = os.environ.get('SNOWFLAKE_SCHEMA')
+    SNOWFLAKE_ROLE = os.environ.get('SNOWFLAKE_ROLE')
+
+    print (SNOWFLAKE_USER)
+    print (SNOWFLAKE_PASSWORD)
+    print (SNOWFLAKE_ACCOUNT)
+    print (SNOWFLAKE_WAREHOUSE)
+    print (SNOWFLAKE_DATABASE)
+    print (SNOWFLAKE_SCHEMA)
+    print (SNOWFLAKE_ROLE)
 
     conn = snowflake.connector.connect(
     	  user=SNOWFLAKE_USER,
     	  password=SNOWFLAKE_PASSWORD,
     	  account=SNOWFLAKE_ACCOUNT,
     	  warehouse=SNOWFLAKE_WAREHOUSE,
-    	  database='PROCESSED',
+    	  database= SNOWFLAKE_DATABASE,
     	  schema=SNOWFLAKE_SCHEMA,
     	  role=SNOWFLAKE_ROLE
     )
+    print(SNOWFLAKE_USER)
+	
     data = pd.read_sql_query(query, conn)
     print("INFO:- Done Fetching Data from Snowflake...")
     return data
@@ -330,7 +340,6 @@ def cheaper_stations():
 
 if __name__ == '__main__':
     # Run the Flask app
-    #app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)), debug=True)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
 
 
