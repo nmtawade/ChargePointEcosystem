@@ -213,7 +213,7 @@ def get_cheaper_stations(station_id):
 	order by record_type desc, is_pricing_applied asc, est_savings desc, distance asc ;
 	;"""
 
-    return cheaper_station_data)
+    return cheaper_station_data
 
 
 @app.route('/')
