@@ -201,7 +201,7 @@ def get_cheaper_stations(station_id):
 	, round(Price_Per_KWH * kwh_multiplier,2) as est_session_fee
 	FROM PROCESSED.NOS.CHARGING_STATIONS a
 	where b_lat != 0
-	nd b_lon != 0
+	AND b_lon != 0
 	AND CONTAINS(b_lat, '0000') = FALSE 
 	AND CONTAINS(b_lon, '0000') = FALSE
 	AND LENGTH(b_lat) > 13
