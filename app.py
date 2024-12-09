@@ -47,7 +47,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-def get_nearby_places_new_api(latitude, longitude, radius=1000):
+def get_nearby_places_new_api(latitude, longitude, radius=2000):
     """
     Fetches nearby places using Google Places API New.
     :param latitude: Latitude of the location
@@ -76,7 +76,7 @@ import logging
 from googleapiclient.discovery import build
 
 
-def get_nearby_offers(latitude, longitude, radius=1000):
+def get_nearby_offers(latitude, longitude, radius=2000):
     """
     Fetches nearby places and their local offers using Google Places API New and Google My Business API.
     :param latitude: Latitude of the location
@@ -85,9 +85,21 @@ def get_nearby_offers(latitude, longitude, radius=1000):
     :return: List of dictionaries containing place information and offers
     """
     places = get_nearby_places_new_api(latitude, longitude, radius)
+
+    places_info = []
+    for place in places:
+        place_id = place['place_id']
+        place_name = place['name']
+        place_description = place.get('description', '')  # Get description if available
+        place_address = place.get('formatted_address', '')  # Get formatted address if available
+
+        places_info.append(f"Place: {place_name}\nDescription: {place_description}\nAddress: {place_address}\n")
+
+
+    ##Get Offers
     offers = []
 
-    for place in places[:10]:
+    for place in places[:20]:
         place_id = place['place_id']
 
         # Get Business Profile location ID
@@ -113,43 +125,14 @@ def get_nearby_offers(latitude, longitude, radius=1000):
                         'offer_type': post['topicType']
                     })
 
-    return offers
+    notification_message = "\n".join(places_info)
+    if offers:
+        notification_message += "\nOffers:\n"
+        for offer in offers:
+            notification_message += f"Offer at {offer['place_name']}: {offer['offer']}\n"
 
-"""
-# Example usage
-latitude = 40.7128
-longitude = -74.0060
-nearby_offers = get_nearby_offers(latitude, longitude)
+    return notification_message
 
-for offer in nearby_offers:
-    print(f"Place: {offer['place_name']} ({offer['place_id']})")
-    print(f"Offer: {offer['offer']}")
-"""
-
-"""
-    for place in places[:10]:  # Limit to top 10 places
-       
-        place_name = place.get('name')
-        place_offers = get_local_offers(latitude, longitude, place_name)
-        if place_offers:
-            offers_with_discounts.append(f"{place_name} - Offers: {', '.join(place_offers)}")
-        else:
-            offers_with_discounts.append(f"{place_name} - No offers available")
-
-    return offers_with_discounts
-"""
-
-def format_offers(offers):
-    """
-    Formats the list of offers into a single string.
-    :param offers: List of offer strings
-    :return: Formatted offer summary
-    """
-    if not offers:
-        return "No offers available at this time."
-
-    offer_summary = "\n".join(offers)
-    return offer_summary
 
 def get_data_from_snowflake(query):
     # Get Snowflake connection parameters from environment variables
@@ -271,12 +254,14 @@ def start_charging():
         return jsonify({'error': 'Missing required parameters.'}), 400
 
     # Fetch nearby offers
-    offers = get_nearby_offers(latitude, longitude)
-    formatted_offers = format_offers(offers)
+    notification_message = get_nearby_offers(latitude, longitude)
+    print(notification_message)
+    ##formatted_offers = format_offers(offers)
+    ##print(formatted_offers)
 
     # Prepare notification content
     title = "Nearby attractions!"
-    body = formatted_offers
+    body = notification_message
 
     # Create the message
     message = messaging.Message(
