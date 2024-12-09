@@ -17,6 +17,8 @@ import pathlib
 import pandas as pd
 import numpy as np
 import snowflake.connector
+import requests
+from googleapiclient.discovery import build
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes or configure as needed
@@ -24,13 +26,37 @@ CORS(app)  # Enable CORS for all routes or configure as needed
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 # Retrieve project ID from environment variable
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
 FIREBASE_CREDENTIALS_JSON= os.environ.get('FIREBASE_CREDENTIALS_JSON')
 GOOGLE_PLACES_API_KEY=os.environ.get('GOOGLE_PLACES_API_KEY')
 GOOGLE_PLACES_NEW_API_KEY=os.environ.get('GOOGLE_PLACES_NEW_API_KEY')
 GOOGLE_MY_BUSINESS_API_KEY=os.environ.get('GOOGLE_MY_BUSINESS_API_KEY')
+CLIENT_ID =os.environ.get('CLIENT_ID')   ## OAuth 2.0 Credentials
+CLIENT_SECRET =os.environ.get('CLIENT_SECRET')
+
+
+########
+
+# Scopes for Google My Business Account Management API
+SCOPES = ['https://www.googleapis.com/auth/business.manage']
+
+# Obtain an access token
+token_url = "https://oauth2.googleapis.com/token"
+token_data = {
+    'client_id': CLIENT_ID,
+    'client_secret': CLIENT_SECRET,
+    'grant_type': 'client_credentials',
+    'scope': ' '.join(SCOPES)
+}
+token_response = requests.post(token_url, data=token_data)
+access_token = token_response.json()['access_token']
+
+# Use the access token in your API requests
+service = build('mybusinessaccountmanagement', 'v1', credentials=access_token)
+# ... (Your API calls using the service object) ...
+
+##############
 
 
 print(PROJECT_ID)
@@ -104,7 +130,7 @@ def get_nearby_offers(latitude, longitude, radius=2000):
         place_id = place['place_id']
 
         # Get Business Profile location ID
-        service = build('mybusinessaccountmanagement', 'v1', developerKey=GOOGLE_MY_BUSINESS_API_KEY)
+        service = build('mybusinessaccountmanagement', 'v1', credentials=access_token)
         accounts = service.accounts().list().execute()
         for account in accounts['accounts']:
             locations = service.accounts().locations().list(parent=account['name']).execute()
@@ -115,7 +141,7 @@ def get_nearby_offers(latitude, longitude, radius=2000):
 
         # Retrieve local offers
         if business_profile_id:
-            service = build('mybusinessaccountmanagement', 'v1', developerKey=GOOGLE_MY_BUSINESS_API_KEY)
+            service = build('mybusinessaccountmanagement', 'v1', credentials=access_token)
             posts = service.accounts().locations().localPosts().list(parent=business_profile_id).execute()
             for post in posts['localPosts']:
                 if post['topicType'] == 'OFFER':
