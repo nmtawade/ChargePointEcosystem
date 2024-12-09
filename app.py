@@ -36,6 +36,20 @@ CLIENT_ID =os.environ.get('CLIENT_ID')   ## OAuth 2.0 Credentials
 CLIENT_SECRET =os.environ.get('CLIENT_SECRET')
 
 
+
+print(PROJECT_ID)
+print(FIREBASE_CREDENTIALS_JSON)
+print("GOOGLE_PLACES_API_KEY  = ", GOOGLE_PLACES_API_KEY)
+print("GOOGLE_PLACES_NEW_API_KEY  = ", GOOGLE_PLACES_NEW_API_KEY)
+print("GOOGLE_MY_BUSINESS_API_KEY  = ", GOOGLE_MY_BUSINESS_API_KEY)
+
+# Initialize Firebase Admin SDK
+firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
+cred = credentials.Certificate(firebase_credentials)
+
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
 ########
 
 # Scopes for Google My Business Account Management API
@@ -50,27 +64,24 @@ token_data = {
     'scope': ' '.join(SCOPES)
 }
 token_response = requests.post(token_url, data=token_data)
-access_token = token_response.json()['access_token']
+#access_token = token_response.json()['access_token']
+#credentials = service_account.Credentials.from_authorized_user({'token': access_token})
 
-# Use the access token in your API requests
-service = build('mybusinessaccountmanagement', 'v1', credentials=access_token)
-# ... (Your API calls using the service object) ...
+if token_response.status_code != 200:
+    logging.error(f"Token request failed: {token_response.status_code}")
+    logging.error(f"Response: {token_response.text}")
+    raise Exception("Failed to obtain access token")
+try:
+    access_token = token_response.json().get('access_token')
+    if not access_token:
+        raise Exception("Access token not found in the response")
+except ValueError:
+    logging.error("Error parsing token response as JSON")
+    logging.error(f"Response: {token_response.text}")
+    raise
 
 ##############
 
-
-print(PROJECT_ID)
-print(FIREBASE_CREDENTIALS_JSON)
-print("GOOGLE_PLACES_API_KEY  = ", GOOGLE_PLACES_API_KEY)
-print("GOOGLE_PLACES_NEW_API_KEY  = ", GOOGLE_PLACES_NEW_API_KEY)
-print("GOOGLE_MY_BUSINESS_API_KEY  = ", GOOGLE_MY_BUSINESS_API_KEY)
-
-# Initialize Firebase Admin SDK
-firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
-cred = credentials.Certificate(firebase_credentials)
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
 
 
 def get_nearby_places_new_api(latitude, longitude, radius=2000):
