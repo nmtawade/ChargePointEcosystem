@@ -185,7 +185,7 @@ def get_cheaper_stations(station_id):
     cheaper_station_data = get_data_from_snowflake("""
 	with test_pool as (
 	SELECT 
-     STATION_ID  
+     STATION_ID as station_id
 	, is_pricing_applied
 	, CASE WHEN STATION_ID = 13881711 THEN 'TARGET' ELSE 'ALT' END AS record_type
 	, CASE WHEN (SELECT NUM_PORTS_L2 FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = 13881711) = 0 THEN 0 ELSE 10 END AS alt_L2_port_filter
@@ -229,6 +229,7 @@ def get_cheaper_stations(station_id):
 	ORDER BY record_type DESC, distance ASC limit 21)
 	select 
 	distance
+        , station_id
 	, station_name 
 	, (select est_session_fee from test_pool where record_type = 'TARGET') - est_session_fee as est_savings
 	from test_pool 
