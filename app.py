@@ -95,6 +95,7 @@ def get_nearby_offers(latitude, longitude, radius=2000):
 
         places_info.append(f"Place: {place_name}\nDescription: {place_description}\nAddress: {place_address}\n")
 
+    print( "places info =", places_info) 
 
     ##Get Offers
     offers = []
@@ -131,6 +132,7 @@ def get_nearby_offers(latitude, longitude, radius=2000):
         for offer in offers:
             notification_message += f"Offer at {offer['place_name']}: {offer['offer']}\n"
 
+    print("notification_message with offers ", notification_message)
     return notification_message
 
 
@@ -255,7 +257,7 @@ def start_charging():
 
     # Fetch nearby offers
     notification_message = get_nearby_offers(latitude, longitude)
-    print(notification_message)
+    print("notification message in start_charging = ", notification_message)
     ##formatted_offers = format_offers(offers)
     ##print(formatted_offers)
 
