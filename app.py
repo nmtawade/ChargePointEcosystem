@@ -119,7 +119,7 @@ def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
     for place in places[:10]:  # Limit to top 10 places
        
         place_name = place.get('name')
-	place_rating = place.get('rating', 'No rating available') # Get rating if available
+        place_rating = place.get('rating', 'No rating available') # Get rating if available
         place_address = place.get('formatted_address', 'No address available'
         place_offers = get_local_offers(latitude, longitude, place_name)
         if place_offers:
