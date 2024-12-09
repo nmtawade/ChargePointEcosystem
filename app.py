@@ -18,6 +18,11 @@ import pandas as pd
 import numpy as np
 import snowflake.connector
 
+from transformers import PegasusTokenizer, PegasusForConditionalGeneration
+import torch
+from tqdm import tqdm
+import re
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes or configure as needed
 
@@ -232,6 +237,43 @@ def get_cheaper_stations(station_id):
 
     return cheaper_station_data
 
+def get_review_summary(station_id): 
+    review_data = get_data_from_snowflake("""
+	select device_id
+	, array_to_string(array_agg(content),'. ') as content_concat
+	from raw.nos.clb_user_tip
+	where DEVICE_ID = '{station_id}'
+	and is_flagged = 0
+	and noslet in('na')
+	and create_date > dateadd(DAY,-90,current_date)
+	group by device_id
+	;""")
+
+    tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
+    model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
+
+    # Removes non-ASCII characters from a string.
+    review_data = re.sub(r'[^\x00-\x7F]+', ' ', review_data)
+
+    # Tokenize the input text
+    inputs = tokenizer.encode(review_data, return_tensors='pt', max_length=512, truncation=True)
+
+    # Generate the summary
+    summary_ids = model.generate(
+        inputs,
+        num_beams=5,
+        no_repeat_ngram_size=3,
+        length_penalty=2.0,
+        min_length=50,
+        max_length=max_length,
+        early_stopping=True
+    )
+
+    # Decode the summary
+    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+    return summary
+
 
 @app.route('/')
 def hello():
@@ -291,6 +333,7 @@ def start_charging():
 #### GET CHEAPER STATIONS
 ##########################
 
+
 @app.route('/cheaper_stations', methods=['POST'])
 def cheaper_stations():
     """
@@ -327,6 +370,15 @@ def cheaper_stations():
     # Prepare notification content
     #title = "Nearby attractions!"
     #body = formatted_offers
+
+@app.route('/review_summary', methods=['GET']) 
+def review_summary(): 
+    station_id = request.args.get('station_id') 
+    if not station_id: 
+       return jsonify({'error': 'Missing station id parameter.'}), 400 
+
+    summary = get_review_summary(station_id) 
+    return jsonify(summary)
 
 
 if __name__ == '__main__':
