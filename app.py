@@ -37,7 +37,7 @@ print(PROJECT_ID)
 print(FIREBASE_CREDENTIALS_JSON)
 print(GOOGLE_PLACES_API_KEY)
 print(GOOGLE_PLACES_NEW_API_KEY)
-print(GOOGLE_MY_BUSINESS_API_KEY
+print(GOOGLE_MY_BUSINESS_API_KEY)
 
 # Initialize Firebase Admin SDK
 firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
