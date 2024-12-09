@@ -1,7 +1,7 @@
 # app.py
 # -*- coding: utf-8 -*-
 """Driver saving Genie local offers
-V6
+V7
 """
 
 import os
