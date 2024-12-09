@@ -35,9 +35,9 @@ GOOGLE_MY_BUSINESS_API_KEY=os.environ.get('GOOGLE_MY_BUSINESS_API_KEY')
 
 print(PROJECT_ID)
 print(FIREBASE_CREDENTIALS_JSON)
-print(GOOGLE_PLACES_API_KEY)
-print(GOOGLE_PLACES_NEW_API_KEY)
-print(GOOGLE_MY_BUSINESS_API_KEY)
+print("GOOGLE_PLACES_API_KEY  = ", GOOGLE_PLACES_API_KEY)
+print("GOOGLE_PLACES_NEW_API_KEY  = ", GOOGLE_PLACES_NEW_API_KEY)
+print("GOOGLE_MY_BUSINESS_API_KEY  = ", GOOGLE_MY_BUSINESS_API_KEY)
 
 # Initialize Firebase Admin SDK
 firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
@@ -69,10 +69,9 @@ def get_nearby_places_new_api(latitude, longitude, radius=2000):
         return []
 
     results = response.json().get('results', [])
+    print ("Nearby places = ", results)
     return results
 
-import requests
-import logging
 from googleapiclient.discovery import build
 
 
@@ -85,6 +84,7 @@ def get_nearby_offers(latitude, longitude, radius=2000):
     :return: List of dictionaries containing place information and offers
     """
     places = get_nearby_places_new_api(latitude, longitude, radius)
+    print ("places inside get _nearby_offers = ", places)
 
     places_info = []
     for place in places:
