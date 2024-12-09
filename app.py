@@ -29,12 +29,15 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
 FIREBASE_CREDENTIALS_JSON= os.environ.get('FIREBASE_CREDENTIALS_JSON')
 GOOGLE_PLACES_API_KEY=os.environ.get('GOOGLE_PLACES_API_KEY')
-YELP_API_KEY = 'vRtpcL5mv9chRIGSCVINtXdYTL_ZVg-n6uMi7_ir5nWDIdwqVN-Df2cHXccJrYX9oCmc5qP0sy3a1ZM7BKKfi8OY25xMGDfkI19DuypUR4GNGX1r2ChUSzT7wPxSZ3Yx'
+GOOGLE_PLACES_NEW_API_KEY=os.environ.get('GOOGLE_PLACES_NEW_API_KEY')
+GOOGLE_MY_BUSINESS_API_KEY=os.environ.get('GOOGLE_MY_BUSINESS_API_KEY')
+
 
 print(PROJECT_ID)
 print(FIREBASE_CREDENTIALS_JSON)
 print(GOOGLE_PLACES_API_KEY)
-
+print(GOOGLE_PLACES_NEW_API_KEY)
+print(GOOGLE_MY_BUSINESS_API_KEY
 
 # Initialize Firebase Admin SDK
 firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
@@ -44,9 +47,9 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-def get_nearby_places(latitude, longitude, radius=1000):
+def get_nearby_places_new_api(latitude, longitude, radius=1000):
     """
-    Fetches nearby places using Google Places API.
+    Fetches nearby places using Google Places API New.
     :param latitude: Latitude of the location
     :param longitude: Longitude of the location
     :param radius: Search radius in meters
@@ -57,7 +60,7 @@ def get_nearby_places(latitude, longitude, radius=1000):
         'location': f'{latitude},{longitude}',
         'radius': radius,
         'type': 'cafe|restaurant|store',  # Adjust types as needed
-        'key': GOOGLE_PLACES_API_KEY
+        'key': GOOGLE_PLACES_NEW_API_KEY
     }
 
     response = requests.get(url, params=params)
@@ -68,51 +71,62 @@ def get_nearby_places(latitude, longitude, radius=1000):
     results = response.json().get('results', [])
     return results
 
-def get_local_offers(latitude, longitude, place_name):
+import requests
+import logging
+from googleapiclient.discovery import build
+
+
+def get_nearby_offers(latitude, longitude, radius=1000):
     """
-    Fetches local offers for a given place using Yelp Fusion API
-    :return: List of offers
-    """
-    url = 'https://api.yelp.com/v3/businesses/search'
-    headers = {
-        'Authorization': 'Bearer ' + YELP_API_KEY
-    }
-    params = { 
-		'latitude': latitude, 
-		'longitude': longitude, 
-		'term': place_name, 
-		'attributes': 'deals'
-    }
-    response = requests.get(url, headers=headers, params=params)
-    if response.status_code != 200:
-        logging.error(f"Yelp Fusion API error: {response.status_code}")
-        return []
-
-    businesses = response.json().get('businesses', [])
-    offers = []
-
-    for business in businesses:
-        name = business.get('name')
-        deal = business.get('deals', [])
-        if deal:
-            offer_details = [d['title'] for d in deal]  # Get the title of the deals
-            offers.append(f"{name} - Deals: {', '.join(offer_details)}")
-        else:
-            offers.append(f"{name} - No deals available")
-
-    return offers
-
-def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
-    """
-    Fetches nearby places and their offers/discounts.
+    Fetches nearby places and their local offers using Google Places API New and Google My Business API.
     :param latitude: Latitude of the location
     :param longitude: Longitude of the location
     :param radius: Search radius in meters
-    :return: List of place names and their offers
+    :return: List of dictionaries containing place information and offers
     """
-    places = get_nearby_places(latitude, longitude, radius)
-    offers_with_discounts = []
+    places = get_nearby_places_new_api(latitude, longitude, radius)
+    offers = []
 
+    for place in places[:10]:
+        place_id = place['place_id']
+
+        # Get Business Profile location ID
+        service = build('mybusinessaccountmanagement', 'v1', developerKey=GOOGLE_MY_BUSINESS_API_KEY)
+        accounts = service.accounts().list().execute()
+        for account in accounts['accounts']:
+            locations = service.accounts().locations().list(parent=account['name']).execute()
+            for location in locations['locations']:
+                if location['locationKey'] == place_id:
+                    business_profile_id = location['name']
+                    break
+
+        # Retrieve local offers
+        if business_profile_id:
+            service = build('mybusinessaccountmanagement', 'v1', developerKey=GOOGLE_MY_BUSINESS_API_KEY)
+            posts = service.accounts().locations().localPosts().list(parent=business_profile_id).execute()
+            for post in posts['localPosts']:
+                if post['topicType'] == 'OFFER':
+                    offers.append({
+                        'place_id': place_id,
+                        'place_name': place['name'],
+                        'offer': post['body'],
+                        'offer_type': post['topicType']
+                    })
+
+    return offers
+
+"""
+# Example usage
+latitude = 40.7128
+longitude = -74.0060
+nearby_offers = get_nearby_offers(latitude, longitude)
+
+for offer in nearby_offers:
+    print(f"Place: {offer['place_name']} ({offer['place_id']})")
+    print(f"Offer: {offer['offer']}")
+"""
+
+"""
     for place in places[:10]:  # Limit to top 10 places
        
         place_name = place.get('name')
@@ -123,6 +137,7 @@ def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
             offers_with_discounts.append(f"{place_name} - No offers available")
 
     return offers_with_discounts
+"""
 
 def format_offers(offers):
     """
@@ -256,7 +271,7 @@ def start_charging():
         return jsonify({'error': 'Missing required parameters.'}), 400
 
     # Fetch nearby offers
-    offers = get_nearby_offers_with_discounts(latitude, longitude)
+    offers = get_nearby_offers(latitude, longitude)
     formatted_offers = format_offers(offers)
 
     # Prepare notification content
