@@ -265,7 +265,7 @@ def start_charging():
     formatted_offers = format_offers(offers)
 
     # Prepare notification content
-    title = "Nearby attractions!"
+    title = "Nearby attractions!\n"
     body = formatted_offers
 
     # Create the message
