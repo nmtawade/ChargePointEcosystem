@@ -19,6 +19,8 @@ import numpy as np
 import snowflake.connector
 import requests
 from googleapiclient.discovery import build
+from google.oauth2 import service_account
+
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes or configure as needed
@@ -28,20 +30,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Retrieve project ID from environment variable
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
-FIREBASE_CREDENTIALS_JSON= os.environ.get('FIREBASE_CREDENTIALS_JSON')
-GOOGLE_PLACES_API_KEY=os.environ.get('GOOGLE_PLACES_API_KEY')
-GOOGLE_PLACES_NEW_API_KEY=os.environ.get('GOOGLE_PLACES_NEW_API_KEY')
-GOOGLE_MY_BUSINESS_API_KEY=os.environ.get('GOOGLE_MY_BUSINESS_API_KEY')
-CLIENT_ID =os.environ.get('CLIENT_ID')   ## OAuth 2.0 Credentials
-CLIENT_SECRET =os.environ.get('CLIENT_SECRET')
-
-
-
-print(PROJECT_ID)
-print(FIREBASE_CREDENTIALS_JSON)
-print("GOOGLE_PLACES_API_KEY  = ", GOOGLE_PLACES_API_KEY)
-print("GOOGLE_PLACES_NEW_API_KEY  = ", GOOGLE_PLACES_NEW_API_KEY)
-print("GOOGLE_MY_BUSINESS_API_KEY  = ", GOOGLE_MY_BUSINESS_API_KEY)
+FIREBASE_CREDENTIALS_JSON = os.environ.get('FIREBASE_CREDENTIALS_JSON')
+GOOGLE_PLACES_NEW_API_KEY = os.environ.get('GOOGLE_PLACES_NEW_API_KEY')
+SERVICE_ACCOUNT_FILE = os.environ.get('SERVICE_ACCOUNT_FILE')  # Path to service account JSON file
 
 # Initialize Firebase Admin SDK
 firebase_credentials = json.loads(FIREBASE_CREDENTIALS_JSON)
@@ -50,48 +41,16 @@ cred = credentials.Certificate(firebase_credentials)
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
-########
-
-# Scopes for Google My Business Account Management API
+# Scopes for Google My Business API
 SCOPES = ['https://www.googleapis.com/auth/business.manage']
 
-# Obtain an access token
-token_url = "https://oauth2.googleapis.com/token"
-token_data = {
-    'client_id': CLIENT_ID,
-    'client_secret': CLIENT_SECRET,
-    'grant_type': 'client_credentials',
-    'scope': ' '.join(SCOPES)
-}
-token_response = requests.post(token_url, data=token_data)
-#access_token = token_response.json()['access_token']
-#credentials = service_account.Credentials.from_authorized_user({'token': access_token})
+# Use the service account file to create credentials
+credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 
-if token_response.status_code != 200:
-    logging.error(f"Token request failed: {token_response.status_code}")
-    logging.error(f"Response: {token_response.text}")
-    raise Exception("Failed to obtain access token")
-try:
-    access_token = token_response.json().get('access_token')
-    if not access_token:
-        raise Exception("Access token not found in the response")
-except ValueError:
-    logging.error("Error parsing token response as JSON")
-    logging.error(f"Response: {token_response.text}")
-    raise
-
-##############
-
-
+# Use the credentials in your API requests
+service = build('mybusinessaccountmanagement', 'v1', credentials=credentials)
 
 def get_nearby_places_new_api(latitude, longitude, radius=2000):
-    """
-    Fetches nearby places using Google Places API New.
-    :param latitude: Latitude of the location
-    :param longitude: Longitude of the location
-    :param radius: Search radius in meters
-    :return: List of place dictionaries
-    """
     url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
     params = {
         'location': f'{latitude},{longitude}',
@@ -106,62 +65,64 @@ def get_nearby_places_new_api(latitude, longitude, radius=2000):
         return []
 
     results = response.json().get('results', [])
-    print ("Nearby places = ", results)
     return results
 
-from googleapiclient.discovery import build
+def get_place_details(place_id):
+    url = 'https://maps.googleapis.com/maps/api/place/details/json'
+    params = {
+        'place_id': place_id,
+        'fields': 'name,formatted_address,description',
+        'key': GOOGLE_PLACES_NEW_API_KEY
+    }
 
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        logging.error(f"Google Places Details API error: {response.status_code}")
+        return {}
+
+    result = response.json().get('result', {})
+    return result
+
+def get_offers_deals(place_id):
+    offers = []
+    accounts = service.accounts().list().execute()
+    for account in accounts['accounts']:
+        locations = service.accounts().locations().list(parent=account['name']).execute()
+        for location in locations['locations']:
+            if location['locationKey'] == place_id:
+                business_profile_id = location['name']
+                posts = service.accounts().locations().localPosts().list(parent=business_profile_id).execute()
+                for post in posts['localPosts']:
+                    if post['topicType'] == 'OFFER':
+                        offers.append({
+                            'place_id': place_id,
+                            'place_name': location['locationName'],
+                            'offer': post['body'],
+                            'offer_type': post['topicType']
+                        })
+                break
+
+    return offers
 
 def get_nearby_offers(latitude, longitude, radius=2000):
-    """
-    Fetches nearby places and their local offers using Google Places API New and Google My Business API.
-    :param latitude: Latitude of the location
-    :param longitude: Longitude of the location
-    :param radius: Search radius in meters
-    :return: List of dictionaries containing place information and offers
-    """
     places = get_nearby_places_new_api(latitude, longitude, radius)
-    print ("places inside get _nearby_offers = ", places)
 
     places_info = []
+    offers = []
+
     for place in places:
         place_id = place['place_id']
         place_name = place['name']
-        place_description = place.get('description', '')  # Get description if available
-        place_address = place.get('formatted_address', '')  # Get formatted address if available
+
+        details = get_place_details(place_id)
+        place_description = details.get('description', 'No description available.')
+        place_address = details.get('formatted_address', 'No address available.')
 
         places_info.append(f"Place: {place_name}\nDescription: {place_description}\nAddress: {place_address}\n")
 
-    print( "places info =", places_info) 
-
-    ##Get Offers
-    offers = []
-
-    for place in places[:20]:
-        place_id = place['place_id']
-
-        # Get Business Profile location ID
-        service = build('mybusinessaccountmanagement', 'v1', credentials=access_token)
-        accounts = service.accounts().list().execute()
-        for account in accounts['accounts']:
-            locations = service.accounts().locations().list(parent=account['name']).execute()
-            for location in locations['locations']:
-                if location['locationKey'] == place_id:
-                    business_profile_id = location['name']
-                    break
-
-        # Retrieve local offers
-        if business_profile_id:
-            service = build('mybusinessaccountmanagement', 'v1', credentials=access_token)
-            posts = service.accounts().locations().localPosts().list(parent=business_profile_id).execute()
-            for post in posts['localPosts']:
-                if post['topicType'] == 'OFFER':
-                    offers.append({
-                        'place_id': place_id,
-                        'place_name': place['name'],
-                        'offer': post['body'],
-                        'offer_type': post['topicType']
-                    })
+        place_offers = get_offers_deals(place_id)
+        for offer in place_offers:
+            offers.append(offer)
 
     notification_message = "\n".join(places_info)
     if offers:
@@ -169,9 +130,7 @@ def get_nearby_offers(latitude, longitude, radius=2000):
         for offer in offers:
             notification_message += f"Offer at {offer['place_name']}: {offer['offer']}\n"
 
-    print("notification_message with offers ", notification_message)
     return notification_message
-
 
 def get_data_from_snowflake(query):
     # Get Snowflake connection parameters from environment variables
@@ -203,7 +162,6 @@ def get_data_from_snowflake(query):
     	  role=SNOWFLAKE_ROLE
     )
   
-	
     data = pd.read_sql_query(query, conn)
     print("INFO:- Done Fetching Data from Snowflake...")
     return data
@@ -264,21 +222,18 @@ def get_cheaper_stations(station_id):
 
     return cheaper_station_data
 
+#######
 
 @app.route('/')
 def hello():
     return jsonify({"message": "Welcome to EV Charging"})
 
+########
+##### LOCAL OFFERS
+#######
+
 @app.route('/start_charging', methods=['POST'])
 def start_charging():
-    """
-    Endpoint to handle when a user starts charging.
-    Expects JSON data with:
-    - device_token (str): FCM device token of the user.
-    - station_id (str): ID of the charging station.
-    - latitude (float): Latitude of the charging station.
-    - longitude (float): Longitude of the charging station.
-    """
     data = request.get_json()
 
     device_token = data.get('device_token')
@@ -292,17 +247,11 @@ def start_charging():
         logging.error("Missing required parameters.")
         return jsonify({'error': 'Missing required parameters.'}), 400
 
-    # Fetch nearby offers
     notification_message = get_nearby_offers(latitude, longitude)
-    print("notification message in start_charging = ", notification_message)
-    ##formatted_offers = format_offers(offers)
-    ##print(formatted_offers)
 
-    # Prepare notification content
     title = "Nearby attractions!"
     body = notification_message
 
-    # Create the message
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
@@ -312,13 +261,16 @@ def start_charging():
     )
 
     try:
-        # Send the notification
         response = messaging.send(message)
         logging.info(f"Successfully sent message: {response}")
         return jsonify({'message': 'Notification sent successfully.'}), 200
     except Exception as e:
         logging.error(f"Error sending notification: {e}")
         return jsonify({'error': 'Failed to send notification.'}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
+
 
 
 ##########################
