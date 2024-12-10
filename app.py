@@ -51,7 +51,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-def get_nearby_places(latitude, longitude, radius=1000):
+def get_nearby_places(latitude, longitude, radius=2000):
     """
     Fetches nearby places using Google Places API.
     :param latitude: Latitude of the location
@@ -110,7 +110,7 @@ def get_local_offers(latitude, longitude, place_name):
 
     return offers
 
-def get_nearby_offers_with_discounts(latitude, longitude, radius=1000):
+def get_nearby_offers_with_discounts(latitude, longitude, radius=2000):
     """
     Fetches nearby places and their offers/discounts.
     :param latitude: Latitude of the location
@@ -279,6 +279,12 @@ def get_review_summary(station_id):
 @app.route('/')
 def hello():
     return jsonify({"message": "Welcome to EV Charging"})
+
+
+#########
+##Start charging
+########
+
 
 @app.route('/start_charging', methods=['POST'])
 def start_charging():
