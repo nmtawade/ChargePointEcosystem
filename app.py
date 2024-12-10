@@ -28,7 +28,7 @@ CORS(app)  # Enable CORS for all routes or configure as needed
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+logger = logging.getLogger(__name__)
 
 # Retrieve project ID from environment variable
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
@@ -239,8 +239,8 @@ def get_cheaper_stations(station_id):
     return cheaper_station_data
 
 def get_review_summary(station_id): 
-    review_data = get_data_from_snowflake("""
-	select device_id
+    review_data = get_data_from_snowflake(f"""
+	select device_id as station_id
 	, array_to_string(array_agg(content),'. ') as content_concat
 	from raw.nos.clb_user_tip
 	where DEVICE_ID = '{station_id}'
@@ -250,14 +250,23 @@ def get_review_summary(station_id):
 	group by device_id
 	;""")
 
+    
+    content = review_data.get('content_concat', '')
+    if not content:
+        print(f"No content found for station_id: {station_id}")
+        return ""
+
+    # Removes non-ASCII characters from a string.
+    content = re.sub(r'[^\x00-\x7F]+', ' ', content)
+
     tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
     model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
 
-    # Removes non-ASCII characters from a string.
-    review_data = re.sub(r'[^\x00-\x7F]+', ' ', review_data)
 
     # Tokenize the input text
-    inputs = tokenizer.encode(review_data, return_tensors='pt', max_length=512, truncation=True)
+    inputs = tokenizer.encode(content, return_tensors='pt', max_length=512, truncation=True)
+
+    max_length = 200
 
     # Generate the summary
     summary_ids = model.generate(
@@ -378,6 +387,9 @@ def cheaper_stations():
     #title = "Nearby attractions!"
     #body = formatted_offers
 
+######################
+##### Review summary
+######################
 @app.route('/review_summary', methods=['GET']) 
 def review_summary(): 
     station_id = request.args.get('station_id') 
@@ -385,7 +397,7 @@ def review_summary():
        return jsonify({'error': 'Missing station id parameter.'}), 400 
 
     summary = get_review_summary(station_id) 
-    return jsonify(summary)
+    return jsonify({'summary': summary}), 200
 
 
 if __name__ == '__main__':
