@@ -182,16 +182,16 @@ def get_data_from_snowflake(query):
     return data
 
 def get_cheaper_stations(station_id):
-    cheaper_station_data = get_data_from_snowflake("""
+    cheaper_station_data = get_data_from_snowflake(f"""
 	with test_pool as (
 	SELECT 
      STATION_ID as station_id
 	, is_pricing_applied
-	, CASE WHEN STATION_ID = 13881711 THEN 'TARGET' ELSE 'ALT' END AS record_type
-	, CASE WHEN (SELECT NUM_PORTS_L2 FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = 13881711) = 0 THEN 0 ELSE 10 END AS alt_L2_port_filter
-	, CASE WHEN (SELECT NUM_PORTS_DC FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = 13881711) = 0 THEN 0 ELSE 10 END AS alt_DC_port_filter
-	, CASE WHEN record_type = 'ALT' THEN (SELECT LAT FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = 13881711) ELSE LAT END AS a_lat
-	, CASE WHEN record_type = 'ALT' THEN (SELECT LON FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = 13881711)  ELSE LON END AS a_lon
+	, CASE WHEN STATION_ID = '{station_id}' THEN 'TARGET' ELSE 'ALT' END AS record_type
+	, CASE WHEN (SELECT NUM_PORTS_L2 FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = '{station_id}') = 0 THEN 0 ELSE 10 END AS alt_L2_port_filter
+	, CASE WHEN (SELECT NUM_PORTS_DC FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = '{station_id}') = 0 THEN 0 ELSE 10 END AS alt_DC_port_filter
+	, CASE WHEN record_type = 'ALT' THEN (SELECT LAT FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = '{station_id}') ELSE LAT END AS a_lat
+	, CASE WHEN record_type = 'ALT' THEN (SELECT LON FROM PROCESSED.NOS.CHARGING_STATIONS WHERE STATION_ID = '{station_id}')  ELSE LON END AS a_lon
 	, case when alt_L2_port_filter = 10 then 'L2' when alt_DC_port_filter = 10 then 'DC' else 'other' end as port_type
 	, case when port_type = 'L2' then (SELECT round(sum(TOTAL_ENERGY_DISPENSED) / count(*),2) FROM PROCESSED.NOS.CHARGING_SESSIONS WHERE PORT_LEVEL = 'L2' AND 
 	SESSION_START_TIME_LOCAL > dateadd(DAY,-90,current_date) AND IS_HOME = 0 AND IS_MFHS_ENABLED = 0) when port_type = 'DC' then (SELECT 
@@ -245,11 +245,10 @@ def get_review_summary(station_id):
 	from raw.nos.clb_user_tip
 	where DEVICE_ID = '{station_id}'
 	and is_flagged = 0
-	and noslet in('na')
-	and create_date > dateadd(DAY,-90,current_date)
 	group by device_id
 	;""")
 
+    ##and create_date > dateadd(DAY,-90,current_date) and noslet in('na')
     
     content = review_data.get('content_concat', '')
     if not content:
