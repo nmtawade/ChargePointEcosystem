@@ -243,7 +243,7 @@ def get_cheaper_stations(station_id):
 
 def get_review_summary(station_id): 
     review_data = get_data_from_snowflake(f"""
-	select device_id as station_id
+	select device_id
 	, array_to_string(array_agg(content),'. ') as content_concat
 	from raw.nos.clb_user_tip
 	where DEVICE_ID = '{station_id}'
