@@ -263,7 +263,7 @@ def get_review_summary(station_id):
         logger.error(f"Unexpected data format for station_id: {station_id}")
         return ""
     
-    content = review_data.get('content_concat', '')
+    ##content = review_data.get('content_concat', '')
     if not content:
         print(f"No content found for station_id: {station_id}")
         return ""
