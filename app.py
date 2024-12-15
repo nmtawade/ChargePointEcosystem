@@ -179,6 +179,7 @@ def get_data_from_snowflake(query):
 	
     data = pd.read_sql_query(query, conn)
     print("INFO:- Done Fetching Data from Snowflake...")
+    print(data.head()) # Print the data for debugging purposes
     return data
 
 def get_cheaper_stations(station_id):
@@ -249,6 +250,10 @@ def get_review_summary(station_id):
 	;""")
 
     ##and create_date > dateadd(DAY,-90,current_date) and noslet in('na')
+
+   # Check the structure of the DataFrame 
+   print(review_data.head()) 
+   print(review_data.columns)
 
 
     if isinstance(review_data, pd.DataFrame):
