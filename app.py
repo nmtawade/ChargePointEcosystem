@@ -17,6 +17,8 @@ import pathlib
 import pandas as pd
 import numpy as np
 import snowflake.connector
+import torch
+from tqdm import tqdm
 
 from transformers import PegasusTokenizer, PegasusForConditionalGeneration
 import torch
@@ -255,41 +257,30 @@ def get_review_summary(station_id):
     print(review_data.head()) 
     print(review_data.columns)
 
+    return review_data
 
-    if isinstance(review_data, pd.DataFrame):
-        if not review_data.empty:
-            # Check if 'content_concat' is in the DataFrame columns 
-            if 'content_concat' in review_data.columns:
-                content = review_data['content_concat']
-            else:
-                logger.info(f"No content found for station_id: {station_id}")
-                return ""
-        else:
-            logging.info(f"No content found for station_id: {station_id}") 
-            return ""
- 
-    elif isinstance(review_data, dict):
-        content = review_data.get('content_concat', '')
-    else:
-        logger.error(f"Unexpected data format for station_id: {station_id}")
-        return ""
-    
-    ##content = review_data.get('content_concat', '')
-    if not content:
-        print(f"No content found for station_id: {station_id}")
-        return ""
+def summarize_reviews_pegasus(combined_reviews, max_length=512):
+    """
+    Summarizes a list of customer reviews using Pegasus.
 
-    # Removes non-ASCII characters from a string.
-    content = re.sub(r'[^\x00-\x7F]+', ' ', content)
+    Parameters:
+    - reviews (list of str): List containing customer review texts.
+    - max_length (int): Maximum length of the summary.
+
+    Returns:
+    - summary (str): Generated summary of the reviews.
+    """
 
     tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
     model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
 
+    # Combine all reviews into a single text block
+    # combined_reviews = " ".join(reviews)
 
+    """Removes non-ASCII characters from a string."""
+    combined_reviews = re.sub(r'[^\x00-\x7F]+', ' ', combined_reviews)
     # Tokenize the input text
-    inputs = tokenizer.encode(content, return_tensors='pt', max_length=512, truncation=True)
-
-    max_length = 200
+    inputs = tokenizer.encode(combined_reviews, return_tensors='pt', max_length=512, truncation=True)
 
     # Generate the summary
     summary_ids = model.generate(
@@ -306,6 +297,42 @@ def get_review_summary(station_id):
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
     return summary
+
+def generate_summary_dataframe(df):
+    """
+    Generates a summary DataFrame with station_id and review_comment_summary.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame containing 'Station_id' and 'review_comment' columns.
+
+    Returns:
+    - summary_df (pd.DataFrame): DataFrame with 'station_id' and 'review_comment_summary' columns.
+    """
+
+    #Create an empty dataframe
+    summaries = pd.DataFrame(columns=['device_id','review_comment_summary'])
+
+    # Iterate over each group and generate summaries
+    for _, row in tqdm(df.iterrows(), total=df.shape[0], desc="Generating Summaries"):
+        station_id = row['DEVICE_ID']
+        reviews = row['CONTENT_CONCAT']
+
+        # Handle cases with no reviews
+        if not reviews:
+            summary = ""
+        else:
+            summary = summarize_reviews_pegasus(reviews)
+
+        #summaries.append({'device_id': station_id, 'review_comment_summary': summary})
+
+
+        new_row = pd.DataFrame([{'device_id': station_id, 'review_comment_summary': summary}])
+
+        summaries = pd.concat([summaries, new_row], ignore_index=True)
+
+
+    return summaries
+
 
 
 @app.route('/')
@@ -419,7 +446,8 @@ def review_summary():
     if not station_id: 
        return jsonify({'error': 'Missing station id parameter.'}), 400 
 
-    summary = get_review_summary(station_id) 
+    review_data = get_review_summary(station_id) 
+    summary_df = generate_summary_dataframe(review_data)
     return jsonify({'summary': summary}), 200
 
 

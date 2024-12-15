@@ -10,5 +10,6 @@ pandas==2.2.3
 snowflake-connector-python==3.12.4
 transformers==4.47.0 
 torch==2.5.1
+tqdm==4.67.1
 
 
