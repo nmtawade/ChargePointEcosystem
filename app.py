@@ -448,7 +448,10 @@ def review_summary():
 
     review_data = get_review_summary(station_id) 
     summary_df = generate_summary_dataframe(review_data)
-    return jsonify({'summary': summary}), 200
+
+    # Convert the DataFrame to a dictionary 
+    summary_dict = summary_df.to_dict(orient='records')
+    return jsonify({'summary': summary_dict}), 200
 
 
 if __name__ == '__main__':
