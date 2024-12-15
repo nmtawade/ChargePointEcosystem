@@ -251,9 +251,9 @@ def get_review_summary(station_id):
 
     ##and create_date > dateadd(DAY,-90,current_date) and noslet in('na')
 
-   # Check the structure of the DataFrame 
-   print(review_data.head()) 
-   print(review_data.columns)
+    # Check the structure of the DataFrame 
+    print(review_data.head()) 
+    print(review_data.columns)
 
 
     if isinstance(review_data, pd.DataFrame):
