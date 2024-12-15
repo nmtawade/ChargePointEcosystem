@@ -258,10 +258,16 @@ def get_review_summary(station_id):
 
     if isinstance(review_data, pd.DataFrame):
         if not review_data.empty:
-            content = review_data.iloc[0]['content_concat']
+            # Check if 'content_concat' is in the DataFrame columns 
+            if 'content_concat' in review_data.columns:
+                content = review_data['content_concat']
+            else:
+                logger.info(f"No content found for station_id: {station_id}")
+                return ""
         else:
-            logger.info(f"No content found for station_id: {station_id}")
+            logging.info(f"No content found for station_id: {station_id}") 
             return ""
+ 
     elif isinstance(review_data, dict):
         content = review_data.get('content_concat', '')
     else:
