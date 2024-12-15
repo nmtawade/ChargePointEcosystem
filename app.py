@@ -249,6 +249,19 @@ def get_review_summary(station_id):
 	;""")
 
     ##and create_date > dateadd(DAY,-90,current_date) and noslet in('na')
+
+
+    if isinstance(review_data, pd.DataFrame):
+        if not review_data.empty:
+            content = review_data.iloc[0]['content_concat']
+        else:
+            logger.info(f"No content found for station_id: {station_id}")
+            return ""
+    elif isinstance(review_data, dict):
+        content = review_data.get('content_concat', '')
+    else:
+        logger.error(f"Unexpected data format for station_id: {station_id}")
+        return ""
     
     content = review_data.get('content_concat', '')
     if not content:
