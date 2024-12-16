@@ -11,5 +11,13 @@ snowflake-connector-python==3.12.4
 transformers==4.47.0 
 torch==2.5.1
 tqdm==4.67.1
+sentencepiece==0.0.4
+google-auth==2.22.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.155.0
+protobuf==5.29.1
+regex==2024.11.6
+
 
 
