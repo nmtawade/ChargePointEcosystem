@@ -271,9 +271,6 @@ def summarize_reviews_pegasus(combined_reviews, max_length=512):
     - summary (str): Generated summary of the reviews.
     """
 
-    tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
-    model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
-
     # Combine all reviews into a single text block
     # combined_reviews = " ".join(reviews)
 
@@ -290,7 +287,7 @@ def summarize_reviews_pegasus(combined_reviews, max_length=512):
         no_repeat_ngram_size=3,
         length_penalty=2.0,
         min_length=50,
-        max_length=max_length,
+        max_length=200,
         early_stopping=True
     )
 
@@ -311,6 +308,10 @@ def generate_summary_dataframe(df):
     """
 
     #Create an empty dataframe
+
+    tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
+    model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
+
     summaries = pd.DataFrame(columns=['device_id','review_comment_summary'])
 
     # Iterate over each group and generate summaries
