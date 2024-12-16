@@ -15,7 +15,7 @@ google-auth==2.22.0
 google-auth-oauthlib==1.2.1
 google-auth-httplib2==0.2.0
 google-api-python-client==2.155.0
-protobuf==3.19.1
+protobuf
 regex==2024.11.6
 
 
