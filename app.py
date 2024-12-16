@@ -32,6 +32,15 @@ CORS(app)  # Enable CORS for all routes or configure as needed
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Initialize tokenizer and model once at startup
+try:
+    tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
+    model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
+    logger.info("Pegasus tokenizer and model loaded successfully.")
+except Exception as e:
+    logger.error(f"Error loading Pegasus tokenizer/model: {e}")
+    raise
+
 # Retrieve project ID from environment variable
 PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT')
 FIREBASE_CREDENTIALS_JSON= os.environ.get('FIREBASE_CREDENTIALS_JSON')
@@ -310,11 +319,6 @@ def generate_summary_dataframe(df):
 
     #Create an empty dataframe
     summaries = pd.DataFrame(columns=['device_id','review_comment_summary'])
-
-    tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
-    model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
-
-    print("Model initialised")
 
     # Iterate over each group and generate summaries
     for _, row in tqdm(df.iterrows(), total=df.shape[0], desc="Generating Summaries"):
