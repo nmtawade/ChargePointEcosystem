@@ -306,13 +306,15 @@ def generate_summary_dataframe(df):
     Returns:
     summary_df (pd.DataFrame): DataFrame with 'station_id' and 'review_comment_summary' columns.
     """
+    print("Entered the function generate_summary_dataframe")
 
     #Create an empty dataframe
+    summaries = pd.DataFrame(columns=['device_id','review_comment_summary'])
 
     tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
     model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
 
-    summaries = pd.DataFrame(columns=['device_id','review_comment_summary'])
+    print("Model initialised")
 
     # Iterate over each group and generate summaries
     for _, row in tqdm(df.iterrows(), total=df.shape[0], desc="Generating Summaries"):
